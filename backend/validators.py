@@ -40,3 +40,30 @@ def validate_event(data):
         errors.append("Total tickets must be at least 1")
 
     return errors
+
+
+def validate_booking(data):
+    errors = []
+
+    customer_name = str(data.get("customerName", "")).strip()
+    customer_email = str(data.get("customerEmail", "")).strip()
+    event_id = str(data.get("eventId", "")).strip()
+
+    try:
+        ticket_quantity = int(data.get("ticketQuantity", 0))
+    except (TypeError, ValueError):
+        ticket_quantity = -1
+
+    if len(customer_name) < 3:
+        errors.append("Customer name must contain at least 3 characters")
+
+    if not customer_email or "@" not in customer_email:
+        errors.append("A valid customer email is required")
+
+    if not event_id:
+        errors.append("Event ID is required")
+
+    if ticket_quantity < 1:
+        errors.append("Ticket quantity must be at least 1")
+
+    return errors
