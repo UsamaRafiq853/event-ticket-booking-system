@@ -257,9 +257,7 @@ def update_event(event_id):
             return jsonify(
                 {
                     "success": False,
-                    "message": (
-                        "Total tickets cannot be lower than tickets already sold"
-                    ),
+                    "message": "Total tickets cannot be lower than tickets already sold",
                 }
             ), 400
 
@@ -297,6 +295,48 @@ def update_event(event_id):
             {
                 "success": False,
                 "message": "Unable to update event",
+                "error": str(error),
+            }
+        ), 500
+
+
+@app.route("/api/events/<event_id>", methods=["DELETE"])
+def delete_event(event_id):
+    object_id = parse_event_id(event_id)
+
+    if object_id is None:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Invalid event ID",
+            }
+        ), 400
+
+    try:
+        database = get_database()
+
+        result = database.events.delete_one({"_id": object_id})
+
+        if result.deleted_count == 0:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Event not found",
+                }
+            ), 404
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Event deleted successfully",
+            }
+        ), 200
+
+    except PyMongoError as error:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Unable to delete event",
                 "error": str(error),
             }
         ), 500
