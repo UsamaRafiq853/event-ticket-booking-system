@@ -40,6 +40,25 @@ def serialize_event(event):
     }
 
 
+def serialize_booking(booking):
+    return {
+        "_id": str(booking["_id"]),
+        "eventId": str(booking.get("eventId", "")),
+        "eventTitle": booking.get("eventTitle", ""),
+        "customerName": booking.get("customerName", ""),
+        "customerEmail": booking.get("customerEmail", ""),
+        "ticketQuantity": booking.get("ticketQuantity", 0),
+        "pricePerTicket": booking.get("pricePerTicket", 0),
+        "totalAmount": booking.get("totalAmount", 0),
+        "status": booking.get("status", "Confirmed"),
+        "bookedAt": (
+            booking["bookedAt"].isoformat()
+            if isinstance(booking.get("bookedAt"), datetime)
+            else booking.get("bookedAt")
+        ),
+    }
+
+
 def parse_object_id(value):
     try:
         return ObjectId(value)
@@ -344,6 +363,33 @@ def delete_event(event_id):
         ), 500
 
 
+@app.route("/api/bookings", methods=["GET"])
+def get_bookings():
+    try:
+        database = get_database()
+        bookings = list(database.bookings.find().sort("bookedAt", -1))
+
+        return jsonify(
+            {
+                "success": True,
+                "count": len(bookings),
+                "bookings": [
+                    serialize_booking(booking)
+                    for booking in bookings
+                ],
+            }
+        ), 200
+
+    except PyMongoError as error:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Unable to retrieve bookings",
+                "error": str(error),
+            }
+        ), 500
+
+
 @app.route("/api/bookings", methods=["POST"])
 def create_booking():
     data = request.get_json(silent=True)
@@ -381,7 +427,6 @@ def create_booking():
 
     try:
         database = get_database()
-
         event = database.events.find_one({"_id": event_object_id})
 
         if event is None:
@@ -444,20 +489,15 @@ def create_booking():
             )
             raise
 
+        created_booking = database.bookings.find_one(
+            {"_id": result.inserted_id}
+        )
+
         return jsonify(
             {
                 "success": True,
                 "message": "Booking created successfully",
-                "bookingId": str(result.inserted_id),
-                "booking": {
-                    "eventId": str(event_object_id),
-                    "eventTitle": booking["eventTitle"],
-                    "customerName": booking["customerName"],
-                    "customerEmail": booking["customerEmail"],
-                    "ticketQuantity": booking["ticketQuantity"],
-                    "totalAmount": booking["totalAmount"],
-                    "status": booking["status"],
-                },
+                "booking": serialize_booking(created_booking),
             }
         ), 201
 
