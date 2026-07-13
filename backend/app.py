@@ -390,6 +390,47 @@ def get_bookings():
         ), 500
 
 
+@app.route("/api/bookings/<booking_id>", methods=["GET"])
+def get_booking(booking_id):
+    object_id = parse_object_id(booking_id)
+
+    if object_id is None:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Invalid booking ID",
+            }
+        ), 400
+
+    try:
+        database = get_database()
+        booking = database.bookings.find_one({"_id": object_id})
+
+        if booking is None:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Booking not found",
+                }
+            ), 404
+
+        return jsonify(
+            {
+                "success": True,
+                "booking": serialize_booking(booking),
+            }
+        ), 200
+
+    except PyMongoError as error:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Unable to retrieve booking",
+                "error": str(error),
+            }
+        ), 500
+
+
 @app.route("/api/bookings", methods=["POST"])
 def create_booking():
     data = request.get_json(silent=True)
