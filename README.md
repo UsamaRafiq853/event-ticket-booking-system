@@ -54,6 +54,7 @@ The Flask backend currently provides:
 - [x] Flask backend created
 - [x] Python dependencies
 - [x] Environment variables configured
+- [x] Application configuration module
 - [ ] MongoDB connection
 - [ ] Event CRUD
 - [ ] Booking functionality
