@@ -59,6 +59,7 @@ The Flask backend currently provides:
 - [x] Event input validation
 - [x] Create event API
 - [x] Get all events API
+- [x] Get single event API
 - [ ] Event CRUD
 - [ ] Booking functionality
 - [ ] Frontend integration

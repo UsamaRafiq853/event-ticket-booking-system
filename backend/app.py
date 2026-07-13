@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+from bson import ObjectId
+from bson.errors import InvalidId
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from pymongo.errors import PyMongoError
@@ -87,6 +89,47 @@ def get_events():
             {
                 "success": False,
                 "message": "Unable to retrieve events",
+                "error": str(error),
+            }
+        ), 500
+
+
+@app.route("/api/events/<event_id>", methods=["GET"])
+def get_event(event_id):
+    try:
+        object_id = ObjectId(event_id)
+    except InvalidId:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Invalid event ID",
+            }
+        ), 400
+
+    try:
+        database = get_database()
+        event = database.events.find_one({"_id": object_id})
+
+        if event is None:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Event not found",
+                }
+            ), 404
+
+        return jsonify(
+            {
+                "success": True,
+                "event": serialize_event(event),
+            }
+        ), 200
+
+    except PyMongoError as error:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Unable to retrieve event",
                 "error": str(error),
             }
         ), 500
