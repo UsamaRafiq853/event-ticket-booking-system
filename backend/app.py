@@ -13,6 +13,25 @@ app = Flask(__name__)
 CORS(app)
 
 
+def serialize_event(event):
+    return {
+        "_id": str(event["_id"]),
+        "title": event.get("title", ""),
+        "venue": event.get("venue", ""),
+        "date": event.get("date", ""),
+        "category": event.get("category", ""),
+        "price": event.get("price", 0),
+        "totalTickets": event.get("totalTickets", 0),
+        "availableTickets": event.get("availableTickets", 0),
+        "status": event.get("status", "Active"),
+        "createdAt": (
+            event["createdAt"].isoformat()
+            if isinstance(event.get("createdAt"), datetime)
+            else event.get("createdAt")
+        ),
+    }
+
+
 @app.route("/", methods=["GET"])
 def home():
     return jsonify(
@@ -44,6 +63,33 @@ def database_health():
             "message": message,
         }
     ), status_code
+
+
+@app.route("/api/events", methods=["GET"])
+def get_events():
+    try:
+        database = get_database()
+
+        events = list(
+            database.events.find().sort("createdAt", -1)
+        )
+
+        return jsonify(
+            {
+                "success": True,
+                "count": len(events),
+                "events": [serialize_event(event) for event in events],
+            }
+        ), 200
+
+    except PyMongoError as error:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Unable to retrieve events",
+                "error": str(error),
+            }
+        ), 500
 
 
 @app.route("/api/events", methods=["POST"])
