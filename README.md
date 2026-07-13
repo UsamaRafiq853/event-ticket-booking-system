@@ -52,7 +52,7 @@ The Flask backend currently provides:
 - [x] Initial project structure created
 - [x] Basic documentation added
 - [x] Flask backend created
-- [ ] Python dependencies
+- [x] Python dependencies
 - [ ] MongoDB connection
 - [ ] Event CRUD
 - [ ] Booking functionality
