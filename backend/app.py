@@ -4,11 +4,12 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from pymongo import ReturnDocument
 from pymongo.errors import PyMongoError
 
 from config import Config
 from database import check_database_connection, get_database
-from validators import validate_event
+from validators import validate_booking, validate_event
 
 
 app = Flask(__name__)
@@ -39,10 +40,10 @@ def serialize_event(event):
     }
 
 
-def parse_event_id(event_id):
+def parse_object_id(value):
     try:
-        return ObjectId(event_id)
-    except InvalidId:
+        return ObjectId(value)
+    except (InvalidId, TypeError):
         return None
 
 
@@ -105,7 +106,7 @@ def get_events():
 
 @app.route("/api/events/<event_id>", methods=["GET"])
 def get_event(event_id):
-    object_id = parse_event_id(event_id)
+    object_id = parse_object_id(event_id)
 
     if object_id is None:
         return jsonify(
@@ -204,7 +205,7 @@ def create_event():
 
 @app.route("/api/events/<event_id>", methods=["PUT"])
 def update_event(event_id):
-    object_id = parse_event_id(event_id)
+    object_id = parse_object_id(event_id)
 
     if object_id is None:
         return jsonify(
@@ -257,7 +258,9 @@ def update_event(event_id):
             return jsonify(
                 {
                     "success": False,
-                    "message": "Total tickets cannot be lower than tickets already sold",
+                    "message": (
+                        "Total tickets cannot be lower than tickets already sold"
+                    ),
                 }
             ), 400
 
@@ -302,7 +305,7 @@ def update_event(event_id):
 
 @app.route("/api/events/<event_id>", methods=["DELETE"])
 def delete_event(event_id):
-    object_id = parse_event_id(event_id)
+    object_id = parse_object_id(event_id)
 
     if object_id is None:
         return jsonify(
@@ -314,7 +317,6 @@ def delete_event(event_id):
 
     try:
         database = get_database()
-
         result = database.events.delete_one({"_id": object_id})
 
         if result.deleted_count == 0:
@@ -337,6 +339,133 @@ def delete_event(event_id):
             {
                 "success": False,
                 "message": "Unable to delete event",
+                "error": str(error),
+            }
+        ), 500
+
+
+@app.route("/api/bookings", methods=["POST"])
+def create_booking():
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify(
+            {
+                "success": False,
+                "message": "A valid JSON request body is required",
+            }
+        ), 400
+
+    errors = validate_booking(data)
+
+    if errors:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Booking validation failed",
+                "errors": errors,
+            }
+        ), 400
+
+    event_object_id = parse_object_id(data.get("eventId"))
+
+    if event_object_id is None:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Invalid event ID",
+            }
+        ), 400
+
+    ticket_quantity = int(data["ticketQuantity"])
+
+    try:
+        database = get_database()
+
+        event = database.events.find_one({"_id": event_object_id})
+
+        if event is None:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Event not found",
+                }
+            ), 404
+
+        if event.get("status") != "Active":
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Bookings are not available for this event",
+                }
+            ), 400
+
+        updated_event = database.events.find_one_and_update(
+            {
+                "_id": event_object_id,
+                "availableTickets": {"$gte": ticket_quantity},
+            },
+            {
+                "$inc": {
+                    "availableTickets": -ticket_quantity,
+                }
+            },
+            return_document=ReturnDocument.AFTER,
+        )
+
+        if updated_event is None:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Not enough tickets are available",
+                }
+            ), 400
+
+        total_amount = float(event.get("price", 0)) * ticket_quantity
+
+        booking = {
+            "eventId": event_object_id,
+            "eventTitle": event.get("title", ""),
+            "customerName": str(data["customerName"]).strip(),
+            "customerEmail": str(data["customerEmail"]).strip().lower(),
+            "ticketQuantity": ticket_quantity,
+            "pricePerTicket": float(event.get("price", 0)),
+            "totalAmount": total_amount,
+            "status": "Confirmed",
+            "bookedAt": datetime.now(timezone.utc),
+        }
+
+        try:
+            result = database.bookings.insert_one(booking)
+        except PyMongoError:
+            database.events.update_one(
+                {"_id": event_object_id},
+                {"$inc": {"availableTickets": ticket_quantity}},
+            )
+            raise
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Booking created successfully",
+                "bookingId": str(result.inserted_id),
+                "booking": {
+                    "eventId": str(event_object_id),
+                    "eventTitle": booking["eventTitle"],
+                    "customerName": booking["customerName"],
+                    "customerEmail": booking["customerEmail"],
+                    "ticketQuantity": booking["ticketQuantity"],
+                    "totalAmount": booking["totalAmount"],
+                    "status": booking["status"],
+                },
+            }
+        ), 201
+
+    except PyMongoError as error:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Unable to create booking",
                 "error": str(error),
             }
         ), 500
