@@ -97,3 +97,27 @@ Flask REST API
           | PyMongo
           v
 MongoDB Atlas
+
+## Development Plan
+
+The project will be completed in multiple stages.
+
+### Phase 1
+- Project setup
+- GitHub repository
+- Documentation
+
+### Phase 2
+- Flask backend
+- MongoDB Atlas connection
+- REST API
+
+### Phase 3
+- Event management CRUD
+- Booking management
+- API testing
+
+### Phase 4
+- Frontend integration
+- User interface improvements
+- Final testing
