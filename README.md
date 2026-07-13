@@ -57,6 +57,7 @@ The Flask backend currently provides:
 - [x] Application configuration module
 - [x] MongoDB connection
 - [x] Event input validation
+- [x] Create event API
 - [ ] Event CRUD
 - [ ] Booking functionality
 - [ ] Frontend integration
