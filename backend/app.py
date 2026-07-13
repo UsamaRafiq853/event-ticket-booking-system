@@ -31,7 +31,19 @@ def serialize_event(event):
             if isinstance(event.get("createdAt"), datetime)
             else event.get("createdAt")
         ),
+        "updatedAt": (
+            event["updatedAt"].isoformat()
+            if isinstance(event.get("updatedAt"), datetime)
+            else event.get("updatedAt")
+        ),
     }
+
+
+def parse_event_id(event_id):
+    try:
+        return ObjectId(event_id)
+    except InvalidId:
+        return None
 
 
 @app.route("/", methods=["GET"])
@@ -71,10 +83,7 @@ def database_health():
 def get_events():
     try:
         database = get_database()
-
-        events = list(
-            database.events.find().sort("createdAt", -1)
-        )
+        events = list(database.events.find().sort("createdAt", -1))
 
         return jsonify(
             {
@@ -96,9 +105,9 @@ def get_events():
 
 @app.route("/api/events/<event_id>", methods=["GET"])
 def get_event(event_id):
-    try:
-        object_id = ObjectId(event_id)
-    except InvalidId:
+    object_id = parse_event_id(event_id)
+
+    if object_id is None:
         return jsonify(
             {
                 "success": False,
@@ -188,6 +197,106 @@ def create_event():
             {
                 "success": False,
                 "message": "Unable to create event",
+                "error": str(error),
+            }
+        ), 500
+
+
+@app.route("/api/events/<event_id>", methods=["PUT"])
+def update_event(event_id):
+    object_id = parse_event_id(event_id)
+
+    if object_id is None:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Invalid event ID",
+            }
+        ), 400
+
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify(
+            {
+                "success": False,
+                "message": "A valid JSON request body is required",
+            }
+        ), 400
+
+    errors = validate_event(data)
+
+    if errors:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Event validation failed",
+                "errors": errors,
+            }
+        ), 400
+
+    try:
+        database = get_database()
+        existing_event = database.events.find_one({"_id": object_id})
+
+        if existing_event is None:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Event not found",
+                }
+            ), 404
+
+        total_tickets = int(data["totalTickets"])
+        tickets_sold = (
+            existing_event.get("totalTickets", 0)
+            - existing_event.get("availableTickets", 0)
+        )
+
+        if total_tickets < tickets_sold:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": (
+                        "Total tickets cannot be lower than tickets already sold"
+                    ),
+                }
+            ), 400
+
+        updated_event = {
+            "title": str(data["title"]).strip(),
+            "venue": str(data["venue"]).strip(),
+            "date": str(data["date"]).strip(),
+            "category": str(data["category"]).strip(),
+            "price": float(data["price"]),
+            "totalTickets": total_tickets,
+            "availableTickets": total_tickets - tickets_sold,
+            "status": str(
+                data.get("status", existing_event.get("status", "Active"))
+            ).strip(),
+            "updatedAt": datetime.now(timezone.utc),
+        }
+
+        database.events.update_one(
+            {"_id": object_id},
+            {"$set": updated_event},
+        )
+
+        event = database.events.find_one({"_id": object_id})
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Event updated successfully",
+                "event": serialize_event(event),
+            }
+        ), 200
+
+    except PyMongoError as error:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Unable to update event",
                 "error": str(error),
             }
         ), 500
