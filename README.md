@@ -71,7 +71,8 @@ The Flask backend currently provides:
 - [x] Booking functionality
 - [x] Frontend HTML structure
 - [x] Responsive frontend styling
-- [ ] Frontend integration
+- [x] Frontend API integration
+- [x] Frontend integration
 - [ ] Testing
 
 ## AI and External Assistance
