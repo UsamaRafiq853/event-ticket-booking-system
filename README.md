@@ -116,3 +116,17 @@ Run all tests using:
 
 ```powershell
 python -m pytest tests -v
+
+
+## Lecturer Access
+
+The project can be downloaded or cloned from this public GitHub repository.
+
+### Setup
+
+```powershell
+git clone https://github.com/UsamaRafiq853/event-ticket-booking-system.git
+cd event-ticket-booking-system
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r backend\requirements.txt
