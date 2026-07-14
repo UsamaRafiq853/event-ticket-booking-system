@@ -551,6 +551,134 @@ def create_booking():
             }
         ), 500
 
+@app.route("/api/bookings/<booking_id>/cancel", methods=["PUT"])
+def cancel_booking(booking_id):
+    booking_object_id = parse_object_id(booking_id)
+
+    if booking_object_id is None:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Invalid booking ID",
+            }
+        ), 400
+
+    try:
+        database = get_database()
+
+        booking = database.bookings.find_one(
+            {"_id": booking_object_id}
+        )
+
+        if booking is None:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Booking not found",
+                }
+            ), 404
+
+        if booking.get("status") == "Cancelled":
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Booking is already cancelled",
+                }
+            ), 400
+
+        if booking.get("status") != "Confirmed":
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Only confirmed bookings can be cancelled",
+                }
+            ), 400
+
+        event_object_id = booking.get("eventId")
+        ticket_quantity = int(booking.get("ticketQuantity", 0))
+
+        updated_booking = database.bookings.find_one_and_update(
+            {
+                "_id": booking_object_id,
+                "status": "Confirmed",
+            },
+            {
+                "$set": {
+                    "status": "Cancelled",
+                    "cancelledAt": datetime.now(timezone.utc),
+                }
+            },
+            return_document=ReturnDocument.AFTER,
+        )
+
+        if updated_booking is None:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Booking could not be cancelled",
+                }
+            ), 409
+
+        try:
+            event_result = database.events.update_one(
+                {"_id": event_object_id},
+                {
+                    "$inc": {
+                        "availableTickets": ticket_quantity,
+                    }
+                },
+            )
+
+            if event_result.matched_count == 0:
+                database.bookings.update_one(
+                    {"_id": booking_object_id},
+                    {
+                        "$set": {
+                            "status": "Confirmed",
+                        },
+                        "$unset": {
+                            "cancelledAt": "",
+                        },
+                    },
+                )
+
+                return jsonify(
+                    {
+                        "success": False,
+                        "message": "Related event was not found",
+                    }
+                ), 404
+
+        except PyMongoError:
+            database.bookings.update_one(
+                {"_id": booking_object_id},
+                {
+                    "$set": {
+                        "status": "Confirmed",
+                    },
+                    "$unset": {
+                        "cancelledAt": "",
+                    },
+                },
+            )
+            raise
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Booking cancelled successfully",
+                "booking": serialize_booking(updated_booking),
+            }
+        ), 200
+
+    except PyMongoError as error:
+        return jsonify(
+            {
+                "success": False,
+                "message": "Unable to cancel booking",
+                "error": str(error),
+            }
+        ), 500
 
 if __name__ == "__main__":
     app.run(

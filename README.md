@@ -67,6 +67,8 @@ The Flask backend currently provides:
 - [x] Create booking API
 - [x] Get all bookings API
 - [x] Get single booking API
+- [x] Cancel booking API
+- [x] Booking functionality
 - [ ] Booking functionality
 - [ ] Frontend integration
 - [ ] Testing
