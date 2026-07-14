@@ -94,3 +94,15 @@ MongoDB Atlas
 ## AI and External Assistance
 
 Generative AI was used for planning, technical guidance, debugging and documentation review. All suggestions were reviewed and adapted before use.
+
+## Running the Project
+
+### Backend
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python backend\app.py
+
+### Backend runs at:
+
+http://127.0.0.1:5000
