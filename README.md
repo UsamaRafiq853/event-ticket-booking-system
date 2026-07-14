@@ -110,9 +110,9 @@ http://127.0.0.1:5000
 
 ## Testing
 
-Unit tests have been added for event and booking input validation.
+The project includes unit tests for input validation and integration tests for the Flask API.
 
-Run the tests using:
+Run all tests using:
 
 ```powershell
-python -m pytest tests\test_validators.py -v
+python -m pytest tests -v
