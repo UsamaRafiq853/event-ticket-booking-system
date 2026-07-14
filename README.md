@@ -41,10 +41,26 @@ MongoDB Atlas
 
 ## Current Backend
 
-The Flask backend currently provides:
+### System
 
 - `GET /`
 - `GET /api/health`
+- `GET /api/database-health`
+
+### Events
+
+- `GET /api/events`
+- `GET /api/events/<event_id>`
+- `POST /api/events`
+- `PUT /api/events/<event_id>`
+- `DELETE /api/events/<event_id>`
+
+### Bookings
+
+- `GET /api/bookings`
+- `GET /api/bookings/<booking_id>`
+- `POST /api/bookings`
+- `PUT /api/bookings/<booking_id>/cancel`
 
 ## Current Progress
 
@@ -73,7 +89,7 @@ The Flask backend currently provides:
 - [x] Responsive frontend styling
 - [x] Frontend API integration
 - [x] Frontend integration
-- [ ] Testing
+- [x] End-to-end testing
 
 ## AI and External Assistance
 
