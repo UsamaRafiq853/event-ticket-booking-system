@@ -1,5 +1,11 @@
 # Event Ticket Booking System
 
+Live Demo:
+http://104.197.237.35/
+
+Github Repo:
+https://github.com/UsamaRafiq853/event-ticket-booking-system 
+
 ## Project Overview
 
 This project is a web-based Event Ticket Booking System for a small event management company called Evently.
@@ -25,6 +31,23 @@ The system will help staff manage events and customer bookings in one place.
 - CSS
 - JavaScript
 - GitHub
+
+## Troubleshooting
+
+### MongoDB Atlas Connection Issues
+
+If you encounter MongoDB Atlas connection problems (SSL handshake errors, IP whitelist issues, or database connectivity errors), refer to the troubleshooting conversation below:
+
+ChatGPT Troubleshooting Guide:
+## ChatGPT Troubleshooting Guide:
+https://chatgpt.com/share/6a5618a2-2f74-83eb-945c-8b91e3baeb6a 
+
+
+## Event & Booking API Code:
+https://chatgpt.com/share/6a5619be-b154-83ed-ac5b-fa61954d29a2 
+
+## How can I use MongoDB with Flask:
+https://stackoverflow.com/questions/41514896/how-can-i-use-mongodb-with-flask 
 
 ## System Architecture
 
