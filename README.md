@@ -106,3 +106,13 @@ python backend\app.py
 ### Backend runs at:
 
 http://127.0.0.1:5000
+
+
+## Testing
+
+Unit tests have been added for event and booking input validation.
+
+Run the tests using:
+
+```powershell
+python -m pytest tests\test_validators.py -v
